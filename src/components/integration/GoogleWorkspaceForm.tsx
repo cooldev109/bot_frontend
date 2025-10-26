@@ -103,14 +103,47 @@ export const GoogleWorkspaceForm: React.FC<GoogleWorkspaceFormProps> = ({ busine
           `width=500,height=600,scrollbars=yes,resizable=yes,left=${left},top=${top}`
         );
 
-        // Listen for OAuth completion
-        const checkClosed = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(checkClosed);
+        // Listen for OAuth completion via postMessage (handles COOP policy)
+        const handleMessage = (event: MessageEvent) => {
+          // Accept messages from any origin (backend already validates)
+          // This allows OAuth callback page to communicate with parent window
+
+          if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
+            // Remove event listener
+            window.removeEventListener('message', handleMessage);
             // Refresh integration status after OAuth completion
             fetchIntegrationStatus();
+            setError(null);
+          } else if (event.data?.type === 'GOOGLE_AUTH_ERROR') {
+            // Remove event listener
+            window.removeEventListener('message', handleMessage);
+            setError("Google authentication failed");
+          }
+        };
+
+        // Add event listener for postMessage
+        window.addEventListener('message', handleMessage);
+
+        // Optional: Clean up if popup is manually closed (with error handling for COOP)
+        // This is a fallback in case postMessage doesn't work
+        const checkClosed = setInterval(() => {
+          try {
+            if (popup?.closed) {
+              clearInterval(checkClosed);
+              window.removeEventListener('message', handleMessage);
+              // Refresh status in case it succeeded
+              fetchIntegrationStatus();
+            }
+          } catch (e) {
+            // Ignore Cross-Origin-Opener-Policy errors
           }
         }, 1000);
+
+        // Clear interval after 5 minutes to prevent memory leaks
+        setTimeout(() => {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
+        }, 300000);
       } else {
         setError("Failed to get Google OAuth URL");
       }
