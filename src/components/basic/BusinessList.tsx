@@ -13,6 +13,7 @@ import { GoogleWorkspaceForm } from "../integration/GoogleWorkspaceForm";
 import { HubSpotForm } from "../integration/HubSpotForm";
 import { OdooForm } from "../integration/OdooForm";
 import { AirtableForm } from "../integration/AirtableForm";
+import { ShopifyForm } from "../integration/ShopifyForm";
 import { ChatHistory } from "../chat/ChatHistory";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
@@ -27,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Business } from "@/lib/services/business-service";
 
-type FormType = "business" | "whatsapp" | "tone" | "chat-history" | "google" | "hubspot" | "odoo" | "airtable" | null;
+type FormType = "business" | "whatsapp" | "tone" | "chat-history" | "google" | "hubspot" | "odoo" | "airtable" | "shopify" | null;
 
 export const BusinessList: React.FC = () => {
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
@@ -111,6 +112,12 @@ export const BusinessList: React.FC = () => {
     setIsFormOpen(true);
   };
 
+  const handleShopifyConfig = (business: Business) => {
+    setSelectedBusiness(business);
+    setFormType("shopify");
+    setIsFormOpen(true);
+  };
+
   const handleChatHistory = (business: Business) => {
     setSelectedBusiness(business);
     setFormType("chat-history");
@@ -179,6 +186,15 @@ export const BusinessList: React.FC = () => {
         return (
           <AirtableForm
             key={`airtable-${selectedBusiness?.id}`}
+            businessId={selectedBusiness?.id || 0}
+            onSuccess={handleFormSuccess}
+            onCancel={closeForm}
+          />
+        );
+      case "shopify":
+        return (
+          <ShopifyForm
+            key={`shopify-${selectedBusiness?.id}`}
             businessId={selectedBusiness?.id || 0}
             onSuccess={handleFormSuccess}
             onCancel={closeForm}
@@ -304,6 +320,12 @@ export const BusinessList: React.FC = () => {
                       </div>
                       Airtable
                     </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleShopifyConfig(business)}>
+                      <div className="w-4 h-4 mr-1 bg-primary rounded-sm flex items-center justify-center">
+                        <span className="text-white font-bold text-[10px]">S</span>
+                      </div>
+                      Shopify
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -334,6 +356,7 @@ export const BusinessList: React.FC = () => {
               {formType === "hubspot" && "HubSpot Integration"}
               {formType === "odoo" && "Odoo Integration"}
               {formType === "airtable" && "Airtable Integration"}
+              {formType === "shopify" && "Shopify Integration"}
             </DialogTitle>
             <DialogDescription>
               {formType === "business" && "Configure your business details"}
@@ -344,6 +367,7 @@ export const BusinessList: React.FC = () => {
               {formType === "hubspot" && "Connect your HubSpot CRM"}
               {formType === "odoo" && "Connect your Odoo ERP system"}
               {formType === "airtable" && "Connect your Airtable CRM"}
+              {formType === "shopify" && "Connect your Shopify store"}
             </DialogDescription>
           </DialogHeader>
           {renderForm()}
